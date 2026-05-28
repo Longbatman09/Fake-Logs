@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Customizable Activity Log</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: monospace;
+            padding: 40px;
+            --primary-color: #00ff9c;
+            --dark-bg: #0a0a0a;
+            --input-bg: #0a0a0a;
+            --border-color: #222;
+            background: var(--dark-bg);
+            color: var(--primary-color);
+        }
+
+        .container {
+            max-width: 800px;
+        }
+
+        .config-form {
+            background: #1a1a1a;
+            border: 1px solid var(--border-color);
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--primary-color);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--input-bg);
+            color: var(--primary-color);
+            font-family: monospace;
+            font-size: 14px;
+            border-radius: 3px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            font-family: monospace;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            filter: brightness(1.2);
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .logbox {
+            background: #000;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            width: 100%;
+            min-height: 300px;
+            position: relative;
+            border-radius: 3px;
+            box-shadow: 0 0 10px var(--primary-color) inset;
+        }
+
+        .login-info {
+            position: absolute;
+            top: 8px;
+            left: 10px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        #loadingScreen,
+        #logScreen {
+            margin-top: 22px;
+        }
+
+        .loading {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .user {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .time {
+            color: #777;
+        }
+
+        .log-entry {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .regenerate-btn {
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .error {
+            color: #ff4444;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .form-group.invalid input,
+        .form-group.invalid select {
+            border-color: #ff4444 !important;
+        }
+
+        h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .form-subtitle {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 25px;
+        }
+
+        .display-names-container {
+            margin-bottom: 20px;
+        }
+
+        .display-names-list {
+            background: #050a05;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 10px;
+            min-height: 40px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .display-name-tag {
+            display: inline-block;
+            background: var(--primary-color);
+            color: #000;
+            padding: 6px 12px;
+            margin: 4px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            position: relative;
+            word-break: break-all;
+        }
+
+        .display-name-tag button {
+            background: none;
+            border: none;
+            color: #000;
+            cursor: pointer;
+            margin-left: 8px;
+            font-weight: bold;
+            padding: 0;
+            font-size: 14px;
+            padding-left: 6px;
+        }
+
+        .display-name-tag button:hover {
+            opacity: 0.8;
+        }
+
+        .add-name-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .add-name-row input {
+            flex: 1;
+        }
+
+        .add-name-row button {
+            flex-shrink: 0;
+            width: auto;
+            padding: 10px 20px;
+        }
+
+        .empty-names {
+            color: #888;
+            font-size: 12px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .blurred {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: blur(3px);
+            transition: all 0.3s ease;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .toggle-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .toggle-option input[type="radio"] {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .toggle-option label {
+            cursor: pointer;
+            margin: 0;
+            font-weight: normal;
+            font-size: 14px;
+        }
+
+        .names-header {
+            background: #00d9ff;
+            color: #000;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border-radius: 3px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        body.theme-cyberpunk .names-header {
+            background: #ff006e;
+            color: #fff;
+        }
+
+        body.theme-classic .names-header {
+            background: #0066cc;
+            color: #fff;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: #1a1a1a;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            padding: 0;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: #0d0d0d;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            opacity: 0.8;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .custom-entry-item {
+            background: #0d0d0d;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .custom-entry-info {
+            flex: 1;
+            color: var(--primary-color);
+            font-size: 12px;
+        }
+
+        .custom-entry-item button {
+            background: #ff4444;
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .custom-entry-item button:hover {
+            background: #ff6666;
+        }
+    </style>
+</head>
+
+<body class="theme-hacker">
+
+    <div class="container">
+        <div id="configScreen" class="config-form">
+            <h2>⚙️ Activity Log Configuration</h2>
+            <div class="form-subtitle">Please fill in the details below to generate your activity log</div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="username">Your Username: <span style="color: #ff4444;">*</span></label>
+                    <input type="text" id="username" placeholder="e.g., john_doe_123">
+                    <div class="error" id="error-username"></div>
+                </div>
+                <div class="form-group">
+                    <label for="accountId">Account ID: <span style="color: #ff4444;">*</span></label>
+                    <input type="text" id="accountId" placeholder="e.g., 9876543210">
+                    <div class="error" id="error-accountId"></div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="customColor">Custom Color: <span style="color: #ff4444;">*</span></label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="color" id="customColor" value="#00ff9c" style="width: 50px; height: 40px; cursor: pointer; border: none; border-radius: 3px;">
+                        <input type="text" id="colorHex" placeholder="#00ff9c" style="flex: 1;">
+                    </div>
+                    <div class="error" id="error-customColor"></div>
+                </div>
+                <div class="form-group">
+                    <label>Display Names: <span style="color: #ff4444;">*</span></label>
+                    <div class="display-names-container">
+                        <div class="toggle-group">
+                            <div class="toggle-option">
+                                <input type="radio" id="useCustomNames" name="nameMode" value="custom" checked>
+                                <label for="useCustomNames">Use My Display Names</label>
+                            </div>
+                            <div class="toggle-option">
+                                <input type="radio" id="useRandomNames" name="nameMode" value="random">
+                                <label for="useRandomNames">Use Random Names</label>
+                            </div>
+                        </div>
+                        
+                        <div id="customNamesSection">
+                            <div class="display-names-list" id="displayNamesList">
+                                <div class="empty-names">No display names added yet</div>
+                            </div>
+                            <div class="add-name-row">
+                                <input type="text" id="displayNameInput" placeholder="Enter a display name and click Add">
+                                <button onclick="addDisplayName()" style="width: auto; padding: 10px 20px;">+ Add</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="error" id="error-displayNames"></div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="loadingDelay">Loading Screen Delay (ms): <span style="color: #ff4444;">*</span></label>
+                    <input type="number" id="loadingDelay" value="2000" min="500">
+                    <div class="error" id="error-loadingDelay"></div>
+                </div>
+                <div class="form-group">
+                    <label for="entryDelay">Delay Between Log Entries (ms): <span style="color: #ff4444;">*</span></label>
+                    <input type="number" id="entryDelay" value="1000" min="100">
+                    <div class="error" id="error-entryDelay"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="logCount">Number of Log Entries: <span style="color: #ff4444;">*</span></label>
+                <input type="number" id="logCount" value="40" min="5" max="100">
+                <div class="error" id="error-logCount"></div>
+            </div>
+
+            <div class="button-group">
+                <button onclick="startLog()">🚀 Start Activity Log</button>
+                <button onclick="showCustomEntriesModal()" style="background: #8B00FF;">📝 Add Specific Things</button>
+                <button onclick="resetConfig()" style="background: #666;">↻ Reset to Defaults</button>
+            </div>
+
+            <div id="customEntriesModal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Add Custom Log Entry</h3>
+                        <button class="modal-close" onclick="hideCustomEntriesModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="customName">Name/Username:</label>
+                            <input type="text" id="customName" placeholder="e.g., john_doe">
+                            <div class="error" id="error-customName"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="customTime">Time (HH:MM:SS):</label>
+                            <input type="text" id="customTime" placeholder="e.g., 10:30:45">
+                            <div class="error" id="error-customTime"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="customActivity">Activity/What is done:</label>
+                            <input type="text" id="customActivity" placeholder="e.g., sent a message">
+                            <div class="error" id="error-customActivity"></div>
+                        </div>
+                        <button onclick="addCustomEntry()" style="width: 100%; margin-bottom: 20px;">+ Add Entry</button>
+
+                        <div id="customEntriesList">
+                            <h4 style="color: var(--primary-color); margin-bottom: 10px;">Custom Entries:</h4>
+                            <div id="customEntriesDisplay"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="logContainer" class="hidden">
+            <div class="logbox">
+                <div class="login-info" id="loginInfo"></div>
+
+                <div id="loadingScreen" class="loading">
+                    <span id="loadingText">Initializing activity scan</span><span id="dots"></span>
+                </div>
+
+                <div id="logScreen" class="hidden"></div>
+            </div>
+
+            <button class="regenerate-btn" onclick="showConfig()">← Back to Configuration</button>
+        </div>
+    </div>
+
+    <script>
+        let displayNames = [];
+        let customEntries = [];
+
+        const activities = [
+            '{user} came online',
+            '{user} sent a message to {target}',
+            '{user} logged in',
+            '{user} viewed story',
+            '{user} liked a post',
+            '{user} sent a message to {target}',
+            '{user} started typing',
+            '{user} came online',
+            '{user} viewed story',
+            '{user} sent a message to {target}',
+            '{user} liked a reel',
+            '{user} commented on a post',
+            '{user} shared a post',
+            '{user} updated profile photo',
+            '{user} followed {target}',
+            '{user} started live video',
+            '{user} came online',
+            '{user} saved a post',
+            '{user} sent a message to {target}',
+            '{user} reacted with fire emoji',
+            '{user} viewed story',
+            '{user} logged out',
+            '{user} logged in',
+            '{user} started typing',
+            '{user} joined group chat',
+            '{user} uploaded a story',
+            '{user} changed bio',
+            '{user} sent a voice note',
+            '{user} came online',
+            '{user} liked a comment',
+            '{user} shared a reel',
+            '{user} sent a message to {target}',
+            '{user} viewed profile of {target}',
+            '{user} updated privacy settings',
+            '{user} mentioned {target} in a comment',
+            '{user} liked a story',
+            '{user} followed {target}',
+            '{user} deleted a message',
+            '{user} came online',
+            '{user} pinned a message',
+            '{user} sent a message to {target}',
+            '{user} created a group',
+            '{user} joined group chat',
+            '{user} started typing',
+            '{user} viewed story',
+            '{user} liked a post',
+            '{user} came online',
+            '{user} logged out'
+        ];
+
+        const usernames = [
+            'pixel.vault', 'nightshade.exe', 'lucidorbit', 'vxrify', 'astro.nova',
+            'glitchhaven', 'neoncipher', 'voidpulse', 'cryptix.zone', 'frostbyte.x',
+            'lunarvibe', 'hyperdriftz', 'zenquasar', 'shadowlix', 'echo.velocity',
+            'orbithex', 'mystflare', 'darknova.id', 'skylure', 'venompixel',
+            'cybrflux', 'silentvertex', 'turbo.nyx', 'velvetvoid', 'synthflick',
+            'pixelphantom', 'nova.reign', 'hazecore', 'zeroecho', 'astralbyte',
+            'nightxr', 'cloudvenom', 'eclipseframe', 'vexology', 'frozenorbit',
+            'ghostsignal', 'vividshade', 'alpha.drift', 'lumicore', 'hollowzen',
+            'fluxrider', 'prismvortex', 'frostnova', 'quantumvibe', 'urbancrypt',
+            'lucidvenom', 'darkflare.x', 'cyanpulse', 'mysticglowz', 'nebula.rush',
+            'driftvoid', 'venomshade', 'starlithex', 'cosmiclure', 'turboecho',
+            'pixelforge', 'voidspark', 'zenmatrix', 'chromephantom', 'neonhaven',
+            'vaporblitz', 'skycipher', 'ultranova.x', 'midnightdrift', 'cryptshade',
+            'lunarhaze', 'vortexwave', 'shadowbyte', 'astralghost', 'hypernovaid',
+            'lucidflare', 'frostsignal', 'digitalvenom', 'zenorbit', 'staticpulse',
+            'orbitshade', 'ghostnova', 'pixelrift', 'cyberlure', 'moonphase.exe',
+            'velvetmatrix', 'glitchsprint', 'echocipher', 'mystvoid', 'darkquantum',
+            'nebularushx', 'cloudphantom', 'turboflare', 'voidhorizon', 'prismshade',
+            'frozencrypt', 'lunarforge', 'skyline.echo', 'vaporghost', 'synthnova',
+            'chromedrift', 'shadowzen.x', 'neonvertex', 'lucidstorm', 'cosmicbyte'
+        ];
+
+        function addDisplayName() {
+            const input = document.getElementById('displayNameInput');
+            const name = input.value.trim();
+
+            if (!name) {
+                alert('Please enter a display name');
+                return;
+            }
+
+            if (displayNames.includes(name)) {
+                alert('This display name already exists');
+                return;
+            }
+
+            displayNames.push(name);
+            input.value = '';
+            renderDisplayNames();
+        }
+
+        function removeDisplayName(index) {
+            displayNames.splice(index, 1);
+            renderDisplayNames();
+        }
+
+        function renderDisplayNames() {
+            const container = document.getElementById('displayNamesList');
+
+            if (displayNames.length === 0) {
+                container.innerHTML = '<div class="empty-names">No display names added yet</div>';
+                return;
+            }
+
+            container.innerHTML = displayNames.map((name, index) => `
+                <div class="display-name-tag">
+                    ${name}
+                    <button onclick="removeDisplayName(${index})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function generateUsername() {
+            return usernames[Math.floor(Math.random() * usernames.length)];
+        }
+
+        function showCustomEntriesModal() {
+            document.getElementById('customEntriesModal').classList.remove('hidden');
+        }
+
+        function hideCustomEntriesModal() {
+            document.getElementById('customEntriesModal').classList.add('hidden');
+        }
+
+        function validateCustomEntry() {
+            const name = document.getElementById('customName').value.trim();
+            const time = document.getElementById('customTime').value.trim();
+            const activity = document.getElementById('customActivity').value.trim();
+
+            document.querySelectorAll('.modal-body .error').forEach(el => el.textContent = '');
+
+            let isValid = true;
+
+            if (!name) {
+                document.getElementById('error-customName').textContent = 'Name is required';
+                isValid = false;
+            }
+
+            if (!time) {
+                document.getElementById('error-customTime').textContent = 'Time is required';
+                isValid = false;
+            } else if (!/^\d{1,2}:\d{2}:\d{2}$/.test(time)) {
+                document.getElementById('error-customTime').textContent = 'Invalid format (use HH:MM:SS)';
+                isValid = false;
+            }
+
+            if (!activity) {
+                document.getElementById('error-customActivity').textContent = 'Activity is required';
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function addCustomEntry() {
+            if (!validateCustomEntry()) {
+                return;
+            }
+
+            const name = document.getElementById('customName').value.trim();
+            const time = document.getElementById('customTime').value.trim();
+            const activity = document.getElementById('customActivity').value.trim();
+
+            customEntries.push({
+                name: name,
+                time: time,
+                activity: activity
+            });
+
+            document.getElementById('customName').value = '';
+            document.getElementById('customTime').value = '';
+            document.getElementById('customActivity').value = '';
+
+            renderCustomEntries();
+        }
+
+        function removeCustomEntry(index) {
+            customEntries.splice(index, 1);
+            renderCustomEntries();
+        }
+
+        function renderCustomEntries() {
+            const container = document.getElementById('customEntriesDisplay');
+            
+            if (customEntries.length === 0) {
+                container.innerHTML = '<div style="color: #888; font-size: 12px; padding: 10px;">No custom entries added yet</div>';
+                return;
+            }
+
+            container.innerHTML = customEntries.map((entry, index) => `
+                <div class="custom-entry-item">
+                    <div class="custom-entry-info">
+                        <strong>${entry.name}</strong> | [${entry.time}] ${entry.activity}
+                    </div>
+                    <button onclick="removeCustomEntry(${index})">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function mergeCustomEntries(generatedLogs) {
+            const allLogs = [...generatedLogs];
+            
+            // Add custom entries
+            customEntries.forEach(entry => {
+                allLogs.push({
+                    time: entry.time,
+                    text: `${entry.name} ${entry.activity}`
+                });
+            });
+
+            // Sort by time
+            allLogs.sort((a, b) => {
+                const timeA = a.time.split(':').map(Number);
+                const timeB = b.time.split(':').map(Number);
+                
+                if (timeA[0] !== timeB[0]) return timeA[0] - timeB[0];
+                if (timeA[1] !== timeB[1]) return timeA[1] - timeB[1];
+                return timeA[2] - timeB[2];
+            });
+
+            return allLogs;
+        }
+
+        function generateLogs(count, nameSource, names) {
+            const logs = [];
+            
+            // Start time
+            let hour = 8 + Math.floor(Math.random() * 12);
+            let minute = Math.floor(Math.random() * 60);
+            let second = Math.floor(Math.random() * 60);
+
+            for (let i = 0; i < count; i++) {
+                const activity = activities[Math.floor(Math.random() * activities.length)];
+                
+                // Select user from the provided names
+                const user = names[Math.floor(Math.random() * names.length)];
+
+                let text = activity.replace('{user}', user);
+
+                if (text.includes('{target}')) {
+                    let target;
+                    do {
+                        target = nameSource === 'custom' ? 
+                            names[Math.floor(Math.random() * names.length)] : 
+                            generateUsername();
+                    } while (target === user);
+                    text = text.replace('{target}', target);
+                }
+
+                // Format time
+                const timeStr = `${hour}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
+
+                logs.push({
+                    time: timeStr,
+                    text: text
+                });
+
+                // Increment time by 5-15 seconds
+                second += Math.floor(Math.random() * 10) + 5;
+                if (second >= 60) {
+                    second -= 60;
+                    minute += 1;
+                }
+                if (minute >= 60) {
+                    minute -= 60;
+                    hour += 1;
+                }
+                if (hour >= 24) {
+                    hour = 0;
+                }
+            }
+
+            return logs;
+        }
+
+        function formatLogs(logs) {
+            return logs.map(log => {
+                return `<div class="log-entry"><span class="time">[${log.time}]</span> User <span class="user">${log.text.split(' ').slice(0, -1).join(' ')}</span> ${log.text.split(' ').slice(-1)[0]}</div>`;
+            }).join('');
+        }
+
+        function validateForm() {
+            clearErrors();
+            let isValid = true;
+
+            const username = document.getElementById('username').value.trim();
+            if (!username) {
+                showError('username', 'Username is required');
+                isValid = false;
+            }
+
+            const accountId = document.getElementById('accountId').value.trim();
+            if (!accountId) {
+                showError('accountId', 'Account ID is required');
+                isValid = false;
+            }
+
+            const customColor = document.getElementById('customColor').value;
+            if (!customColor) {
+                showError('customColor', 'Please pick a color');
+                isValid = false;
+            }
+
+            if (displayNames.length === 0) {
+                showError('displayNames', 'Add at least one display name');
+                isValid = false;
+            }
+
+            const loadingDelay = parseInt(document.getElementById('loadingDelay').value);
+            if (isNaN(loadingDelay) || loadingDelay < 500) {
+                showError('loadingDelay', 'Loading delay must be at least 500ms');
+                isValid = false;
+            }
+
+            const entryDelay = parseInt(document.getElementById('entryDelay').value);
+            if (isNaN(entryDelay) || entryDelay < 100) {
+                showError('entryDelay', 'Entry delay must be at least 100ms');
+                isValid = false;
+            }
+
+            const logCount = parseInt(document.getElementById('logCount').value);
+            if (isNaN(logCount) || logCount < 5 || logCount > 100) {
+                showError('logCount', 'Log count must be between 5 and 100');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function showError(fieldName, message) {
+            const errorEl = document.getElementById(`error-${fieldName}`);
+            if (!errorEl) return;
+
+            errorEl.textContent = message;
+
+            if (fieldName === 'displayNames') {
+                document.querySelector('.display-names-container').parentElement.classList.add('invalid');
+            } else {
+                const fieldEl = document.getElementById(fieldName);
+                if (fieldEl && fieldEl.parentElement) {
+                    fieldEl.parentElement.classList.add('invalid');
+                }
+            }
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.error').forEach(el => el.textContent = '');
+            document.querySelectorAll('.form-group').forEach(el => el.classList.remove('invalid'));
+        }
+
+        function startLog() {
+            if (!validateForm()) {
+                return;
+            }
+
+            const username = document.getElementById('username').value.trim();
+            const accountId = document.getElementById('accountId').value.trim();
+            const customColor = document.getElementById('customColor').value;
+            const loadingDelay = parseInt(document.getElementById('loadingDelay').value);
+            const entryDelay = parseInt(document.getElementById('entryDelay').value);
+            const logCount = parseInt(document.getElementById('logCount').value);
+
+            const nameMode = document.querySelector('input[name="nameMode"]:checked').value;
+            
+            // Apply custom color to CSS variables
+            document.documentElement.style.setProperty('--primary-color', customColor);
+            
+            // Determine border and accent colors based on chosen color
+            const rgb = parseInt(customColor.slice(1), 16);
+            const r = (rgb >> 16) & 255;
+            const g = (rgb >> 8) & 255;
+            const b = rgb & 255;
+            
+            // Create a darker version for border/accent
+            const darkColor = `rgb(${Math.floor(r * 0.3)}, ${Math.floor(g * 0.3)}, ${Math.floor(b * 0.3)})`;
+            document.documentElement.style.setProperty('--border-color', darkColor);
+
+            // Determine which names to use
+            let namesToUse = [];
+            let nameSource = nameMode;
+            
+            if (nameMode === 'custom') {
+                namesToUse = displayNames;
+            } else {
+                // Generate random names
+                const randomNameCount = Math.min(5, Math.max(1, Math.floor(logCount / 10)));
+                const usedNames = new Set();
+                while (namesToUse.length < randomNameCount) {
+                    const name = generateUsername();
+                    if (!usedNames.has(name)) {
+                        namesToUse.push(name);
+                        usedNames.add(name);
+                    }
+                }
+            }
+
+            let logs = generateLogs(logCount, nameSource, namesToUse);
+            
+            // Merge with custom entries and sort chronologically
+            logs = mergeCustomEntries(logs);
+            
+            document.getElementById('loginInfo').textContent = `logged in as ${username} , Id:${accountId}`;
+
+            document.getElementById('configScreen').classList.add('hidden');
+            document.getElementById('logContainer').classList.remove('hidden');
+
+            const logScreen = document.getElementById('logScreen');
+            logScreen.innerHTML = formatLogs(logs);
+            logScreen.classList.add('hidden');
+
+            const logEntries = Array.from(logScreen.children);
+            
+            // Hide all log entries initially
+            logEntries.forEach(entry => {
+                entry.style.display = 'none';
+            });
+
+            let dots = '';
+            let dotInterval = setInterval(() => {
+                if (dots.length < 3) {
+                    dots += '.';
+                } else {
+                    dots = '';
+                }
+                document.getElementById('dots').textContent = dots;
+            }, 400);
+
+            setTimeout(() => {
+                clearInterval(dotInterval);
+                document.getElementById('loadingScreen').style.display = 'none';
+                logScreen.classList.remove('hidden');
+
+                let currentIndex = 0;
+                const revealInterval = setInterval(() => {
+                    if (currentIndex >= logEntries.length) {
+                        clearInterval(revealInterval);
+                        return;
+                    }
+                    logEntries[currentIndex].style.display = 'block';
+                    currentIndex += 1;
+                }, entryDelay);
+            }, loadingDelay);
+
+            saveConfig({ username, accountId, customColor: customColor, nameMode: nameMode, displayNames: displayNames, loadingDelay, entryDelay, logCount });
+        }
+
+        function toggleCustomNamesBlur() {
+            const customNamesSection = document.getElementById('customNamesSection');
+            const useRandomNames = document.getElementById('useRandomNames').checked;
+            
+            if (useRandomNames) {
+                customNamesSection.classList.add('blurred');
+            } else {
+                customNamesSection.classList.remove('blurred');
+            }
+        }
+
+        function applyColorToUI(color) {
+            document.documentElement.style.setProperty('--primary-color', color);
+            
+            // Create a darker version for border/accent
+            const rgb = parseInt(color.slice(1), 16);
+            const r = (rgb >> 16) & 255;
+            const g = (rgb >> 8) & 255;
+            const b = rgb & 255;
+            
+            const darkColor = `rgb(${Math.floor(r * 0.3)}, ${Math.floor(g * 0.3)}, ${Math.floor(b * 0.3)})`;
+            document.documentElement.style.setProperty('--border-color', darkColor);
+        }
+
+        window.addEventListener('DOMContentLoaded', function() {
+            loadConfig();
+            
+            // Add event listeners to radio buttons
+            document.getElementById('useCustomNames').addEventListener('change', toggleCustomNamesBlur);
+            document.getElementById('useRandomNames').addEventListener('change', toggleCustomNamesBlur);
+            
+            // Sync color picker with hex input and apply colors in real-time
+            const colorPicker = document.getElementById('customColor');
+            const colorHex = document.getElementById('colorHex');
+            
+            // Apply initial color
+            applyColorToUI(colorPicker.value);
+            
+            colorPicker.addEventListener('input', function() {
+                colorHex.value = this.value;
+                applyColorToUI(this.value);
+            });
+            
+            colorPicker.addEventListener('change', function() {
+                colorHex.value = this.value;
+            });
+            
+            colorHex.addEventListener('input', function() {
+                if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+                    colorPicker.value = this.value;
+                    applyColorToUI(this.value);
+                }
+            });
+            
+            colorHex.addEventListener('change', function() {
+                if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+                    colorPicker.value = this.value;
+                }
+            });
+            
+            // Initial blur state
+            toggleCustomNamesBlur();
+            
+            // Render custom entries
+            renderCustomEntries();
+        });
+        
+        function showConfig() {
+            document.getElementById('configScreen').classList.remove('hidden');
+            document.getElementById('logContainer').classList.add('hidden');
+        }
+
+        function resetConfig() {
+            document.getElementById('username').value = '';
+            document.getElementById('accountId').value = '';
+            document.getElementById('customColor').value = '#00ff9c';
+            document.getElementById('colorHex').value = '#00ff9c';
+            document.getElementById('displayNameInput').value = '';
+            document.getElementById('useCustomNames').checked = true;
+            displayNames = [];
+            renderDisplayNames();
+            document.getElementById('loadingDelay').value = 2000;
+            document.getElementById('entryDelay').value = 1000;
+            document.getElementById('logCount').value = 40;
+            localStorage.removeItem('logConfig');
+        }
+
+        function saveConfig(config) {
+            localStorage.setItem('logConfig', JSON.stringify(config));
+        }
+
+        function loadConfig() {
+            const saved = localStorage.getItem('logConfig');
+            if (saved) {
+                try {
+                    const config = JSON.parse(saved);
+                    document.getElementById('username').value = config.username || '';
+                    document.getElementById('accountId').value = config.accountId || '';
+                    
+                    const customColor = config.customColor || '#00ff9c';
+                    document.getElementById('customColor').value = customColor;
+                    document.getElementById('colorHex').value = customColor;
+                    
+                    const nameMode = config.nameMode || 'custom';
+                    if (nameMode === 'custom') {
+                        document.getElementById('useCustomNames').checked = true;
+                    } else {
+                        document.getElementById('useRandomNames').checked = true;
+                    }
+                    
+                    displayNames = config.displayNames || [];
+                    renderDisplayNames();
+                    document.getElementById('loadingDelay').value = config.loadingDelay || 2000;
+                    document.getElementById('entryDelay').value = config.entryDelay || 1000;
+                    document.getElementById('logCount').value = config.logCount || 40;
+                } catch (e) {
+                    console.error('Failed to load config:', e);
+                }
+            }
+        }
+
+        function applyColorToUI(color) {
+            document.documentElement.style.setProperty('--primary-color', color);
+            
+            // Create a darker version for border/accent
+            const rgb = parseInt(color.slice(1), 16);
+            const r = (rgb >> 16) & 255;
+            const g = (rgb >> 8) & 255;
+            const b = rgb & 255;
+            
+            const darkColor = `rgb(${Math.floor(r * 0.3)}, ${Math.floor(g * 0.3)}, ${Math.floor(b * 0.3)})`;
+            document.documentElement.style.setProperty('--border-color', darkColor);
+        }
+
+        window.addEventListener('DOMContentLoaded', function() {
+            loadConfig();
+            
+            // Add event listeners to radio buttons
+            document.getElementById('useCustomNames').addEventListener('change', toggleCustomNamesBlur);
+            document.getElementById('useRandomNames').addEventListener('change', toggleCustomNamesBlur);
+            
+            // Sync color picker with hex input
+            const colorPicker = document.getElementById('customColor');
+            const colorHex = document.getElementById('colorHex');
+            
+            // Apply initial color
+            applyColorToUI(colorPicker.value);
+            
+            colorPicker.addEventListener('input', function() {
+                colorHex.value = this.value;
+                applyColorToUI(this.value);
+            });
+            
+            colorPicker.addEventListener('change', function() {
+                colorHex.value = this.value;
+            });
+            
+            colorHex.addEventListener('input', function() {
+                if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+                    colorPicker.value = this.value;
+                    applyColorToUI(this.value);
+                }
+            });
+            
+            colorHex.addEventListener('change', function() {
+                if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+                    colorPicker.value = this.value;
+                }
+            });
+            
+            // Initial blur state
+            toggleCustomNamesBlur();
+        });
+
+    </script>
+
+</body>
+
+</html>
