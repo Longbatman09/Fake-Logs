@@ -1,5 +1,6 @@
-##Description
-Here is an overview of how it works from a user's perspective:
+## Description
+# Here is an overview of how it works from a user's perspective:
+
 - The Setup Screen When you first open it, you are greeted with a setup form. You can customize the look of the terminal (like picking a neon green or pink color) and enter a "Username" and "Account ID" to make it look official.
 - Choosing the Characters You can decide who shows up in the logs. You can either type in specific display names yourself, or allow the tool to generate random, cool-sounding gamer/hacker usernames.
 - Writing the Story Behind the scenes, the code has a list of standard actions ready to go (e.g., "[Person A] logged in", "[Person A] sent a message to [Person B]"). It randomly mixes your chosen names with these actions and assigns them realistic, chronological time stamps.
